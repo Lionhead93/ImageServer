@@ -11,7 +11,7 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
-public class DeleteImageResponse {
+public class ServerResponse {
 	private String message;
 	private String code;
 }

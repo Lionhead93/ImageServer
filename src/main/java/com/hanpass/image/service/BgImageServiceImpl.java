@@ -20,8 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.hanpass.image.dto.DeleteImageResponse;
-import com.hanpass.image.dto.RegImageResponse;
+import com.hanpass.image.dto.ServerResponse;
 import com.hanpass.image.model.BgImage;
 import com.hanpass.image.repository.BgImageRepository;
 import com.hanpass.image.type.Extension;
@@ -50,7 +49,7 @@ public class BgImageServiceImpl implements BgImageService {
 	}
 	
 	@Override
-	public RegImageResponse registrationImage(List<MultipartFile> fileList) throws Exception {
+	public ServerResponse registrationImage(List<MultipartFile> fileList) throws Exception {
 
 		String userId = "testUser";
 
@@ -82,7 +81,7 @@ public class BgImageServiceImpl implements BgImageService {
 			}
 		}
 
-		return new RegImageResponse("ok", "0000");
+		return new ServerResponse("ok", "0000");
 	}	
 
 	@Override
@@ -126,7 +125,7 @@ public class BgImageServiceImpl implements BgImageService {
 	}
 
 	@Override
-	public DeleteImageResponse deleteImage(Long fileSeq) {
+	public ServerResponse deleteImage(Long fileSeq) {
 		logger.info("### deleteFileSeq : {} ###", fileSeq);
 
 		Optional<BgImage> op = bgImageRepository.findById(fileSeq);
@@ -136,7 +135,7 @@ public class BgImageServiceImpl implements BgImageService {
 		if (op.isPresent()) {
 			bgImage = op.get();
 		} else {
-			return new DeleteImageResponse("Not Found : " + fileSeq.toString(), "9999");
+			return new ServerResponse("Not Found : " + fileSeq.toString(), "9999");
 		}
 
 		String fileName = bgImage.getFileName();
@@ -145,15 +144,15 @@ public class BgImageServiceImpl implements BgImageService {
 
 		if (file.exists()) {
 			if (!file.delete()) {
-				return new DeleteImageResponse("DELETE FAIL : " + fileName, "9999");
+				return new ServerResponse("DELETE FAIL : " + fileName, "9999");
 			}
 		} else {
-			return new DeleteImageResponse("Not Found : " + fileName, "9999");
+			return new ServerResponse("Not Found : " + fileName, "9999");
 		}
 
 		bgImageRepository.delete(bgImage);
 
-		return new DeleteImageResponse("ok", "0000");
+		return new ServerResponse("ok", "0000");
 	}
 
 	public MediaType getMediaTypeFromFileName(String fileName) {

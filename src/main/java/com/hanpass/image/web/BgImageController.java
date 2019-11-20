@@ -17,8 +17,7 @@ import org.springframework.web.multipart.MultipartHttpServletRequest;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 
-import com.hanpass.image.dto.DeleteImageResponse;
-import com.hanpass.image.dto.RegImageResponse;
+import com.hanpass.image.dto.ServerResponse;
 import com.hanpass.image.service.BgImageService;
 
 @RestController
@@ -37,7 +36,7 @@ public class BgImageController {
 	}
 
 	@PostMapping("/regImage")
-	public RegImageResponse registration(MultipartHttpServletRequest request) throws Exception {
+	public ServerResponse registration(MultipartHttpServletRequest request) throws Exception {
 
 		List<MultipartFile> fileList = request.getFiles("file");
 
@@ -50,7 +49,7 @@ public class BgImageController {
 	}
 	
 	@DeleteMapping("/deleteImage/{fileSeq}")
-	public DeleteImageResponse deleteImage(@PathVariable(name = "fileSeq", required = true) Long fileSeq) {
+	public ServerResponse deleteImage(@PathVariable(name = "fileSeq", required = true) Long fileSeq) {
 		return bgImageServiceImpl.deleteImage(fileSeq);
 	}
 }
