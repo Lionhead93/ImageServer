@@ -20,6 +20,23 @@
 .delete-button:hover {
 	cursor: pointer;
 }
+
+.loading {
+	width: 100%;
+	position: relative;
+	z-index: 1;
+	height: 100%;
+}
+
+.spinner-border {
+	width: 3rem;
+	height: 3rem;
+	display: block;
+	position: fixed;
+	top: calc(50% - ( 58px/ 2));
+	right: calc(50% - ( 58px/ 2));
+	display: block;
+}
 </style>
 </head>
 <body>
@@ -29,9 +46,7 @@
 				class="btn btn-primary btn-lg btn-block img-reg-btn">Image
 				Registration</button>
 		</div>
-		<div id="han-image-layer" class="row">
-					
-		</div>
+		<div id="han-image-layer" class="row"></div>
 	</div>
 	<!--이미지모달 -->
 	<div class="modal fade" id="imgModal" tabindex="-1" role="dialog"
@@ -47,20 +62,28 @@
 				</div>
 				<div class="modal-body">
 					<img id="modal-image-detail" src="" width="100%" height="100%"
-						alt="No Image">
+						alt="File is not an image">
 				</div>
 			</div>
 		</div>
 	</div>
+	<!--스피너 -->
+	<div class="text-center loading" style="display: none;">
+		<div class="spinner-border text-primary" role="status">
+			<span class="sr-only">Loading....</span>
+		</div>
+	</div>
 	<form id="fileForm" method="post" enctype="mutipart/form-data">
-		<input type="file" id="hd-file-input" name="file" multiple="multiple" hidden>
+		<input type="file" id="hd-file-input" name="file"
+			accept="image/gif, image/jpeg, image/png, application/pdf" hidden>
 	</form>
 	<script defer
 		src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"></script>
 	<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
 		integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
 		crossorigin="anonymous"></script>
-	<script src="https://code.jquery.com/jquery-3.3.1.min.js" type="text/javascript"></script>	
+	<script src="https://code.jquery.com/jquery-3.3.1.min.js"
+		type="text/javascript"></script>
 	<script
 		src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
 		integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
@@ -69,24 +92,31 @@
 		src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
 		integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
 		crossorigin="anonymous"></script>
+
+	<script src="js/load-image.all.min.js"></script>
+
 	<script type="text/javascript">
 		$(function() {
 			var SERVER_URL = "http://192.168.0.85:8989/";
-			
+			var USER_ID = "testuser2";
+
 			function imgDeleteEvent() {
 				$(".delete-button").on("click", function() {
 					var fileSeq = $(this).attr("id").trim();
 					$.ajax({
 						type : "DELETE",
-						url : SERVER_URL+"deleteImage/"+fileSeq,
-						success : function(result){
-							if(result.code=="0000"){
+						headers : {
+							"userId" : USER_ID
+						},
+						url : SERVER_URL + "deleteImage/" + fileSeq,
+						success : function(result) {
+							if (result.code == "0000") {
 								window.location.reload();
-							}else{
-								alert("등록 실패 ["+result.message+"]")
+							} else {
+								alert("등록 실패 [" + result.message + "]")
 							}
-						}						
-					});					
+						}
+					});
 				});
 			}
 
@@ -97,62 +127,159 @@
 				});
 			}
 
-			function makeImageCardHtml(src,seq) {
+			function makeImageCardHtml(src, seq) {
 				return '<div class="col-4 text-center han-card-wrap">'
 						+ '<div class="card border-light" style="margin: 10px;">'
 						+ '<div class="text-right">'
 						+ '<span id='+seq+' class="delete-button"><small><i class="fas fa-times-circle"></i></small></span>'
 						+ '</div>'
-						+ '<img src="' + src + '" class="card-img-top han-mem-img" alt="error" data-target="#imgModal" data-toggle="modal">'
+						+ '<img src="' + src + '" class="card-img-top han-mem-img" alt="File is not an image" data-target="#imgModal" data-toggle="modal">'
 						+ '</div>' + '</div>';
 			}
 			/*imageList 호출*/
 			$.ajax({
 				type : "GET",
-				url : SERVER_URL+"bgImageList",
+				url : SERVER_URL + "bgImageList",
 				headers : {
-					"userId" : "testUser"
+					"userId" : USER_ID
 				},
-				success : function (result){
-					$.each(result, function(index, value){
-						var ImageUrl = SERVER_URL+"getImage/"+value;
-						$("#han-image-layer").append(makeImageCardHtml(ImageUrl,value));						
+				success : function(result) {
+					$.each(result, function(index, value) {
+						var ImageUrl = SERVER_URL + "getImage/" + value;
+						$("#han-image-layer").append(
+								makeImageCardHtml(ImageUrl, value));
 					});
 					imgClickEvent();
 					imgDeleteEvent();
+					pdfHelper();
 				}
 			});
 
-			let input_img = [];
+			function imgRegistry(e) {
 
-			function fileRegistry() {
+				var formData = new FormData();
+				var uploadFile = e.target.files[0];
+				loadImage(uploadFile, function(img) {
+
+					dataUrl = img.toDataURL("image/jpeg");
+					var imgtype = dataUrl.split(';');
+					var contentType = imgtype[0].split(':')[1];
+
+					var blob = dataURItoBlob(dataUrl);
+
+					formData.append("file", blob, uploadFile.name);
+					formData.append("Type", contentType);
+
+					$.ajax({
+						type : "POST",
+						enctype : "multipart/form-data",
+						headers : {
+							"userId" : USER_ID
+						},
+						url : SERVER_URL + "regImage",
+						data : formData,
+						processData : false,
+						contentType : false,
+						cache : false,
+						success : function(result) {
+							if (result.code == "0000") {
+								window.location.reload();
+							} else {
+								alert("등록실패 [" + result.message + "]");
+							}
+
+						},
+						error : function(e) {
+							alert("등록 실패");
+						}
+					});
+
+				}, {
+					orientation : true
+				});
+			}
+
+			function pdfRegstry(e) {
 				var formData = new FormData($("#fileForm")[0]);
 				$.ajax({
 					type : "POST",
 					enctype : "multipart/form-data",
-					url : SERVER_URL+"regImage",
+					url : SERVER_URL + "regImage",
+					headers : {
+						"userId" : USER_ID
+					},
 					data : formData,
 					processData : false,
 					contentType : false,
 					cache : false,
-					success : function (result) {
-						if(result.code=="0000"){
+					success : function(result) {
+						if (result.code == "0000") {
 							window.location.reload();
-						}else{
-							alert("등록 실패 ["+result.message+"]")
+						} else {
+							alert("등록실패 [" + result.message + "]");
 						}
+
 					},
-					error : function (e) {
+					error : function(e) {
 						alert("등록 실패");
 					}
 				});
 			}
 
+			function pdfHelper() {
+				$("img").on("error", function(e) {
+					var imgSrc = $(this).attr("src");
+					e.target.src = SERVER_URL + "image/pdf-icon.png";
+					$(this).attr("data-target","");		
+					$(this).on("click",function(){
+						window.open(imgSrc,"");
+					});
+				});
+			}
+
 			$(".img-reg-btn").on("click", function() {
+				$(".loading").show();
 				$("#hd-file-input").click();
+				initialize();
 			});
 
-			$("#hd-file-input").on("change", fileRegistry);
+			$("#hd-file-input").on("change", function(e) {
+				var ext = e.target.files[0].type;
+				if (ext.match('image.*')) {
+					imgRegistry(e);
+				} else if (ext === 'application/pdf') {
+					pdfRegstry(e);
+				} else {
+					alert("Not support file type");
+				}
+			});
+
+			function dataURItoBlob(dataURI) {
+				var byteString = atob(dataURI.split(',')[1]);
+				var mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0]
+				var ab = new ArrayBuffer(byteString.length);
+				var ia = new Uint8Array(ab);
+
+				for (var i = 0; i < byteString.length; i++) {
+					ia[i] = byteString.charCodeAt(i);
+				}
+
+				var bb = new Blob([ ab ], {
+					"type" : mimeString
+				});
+				return bb;
+			}
+
+			var theFile = document.getElementById('hd-file-input');
+
+			function initialize() {
+				document.body.onfocus = sppinerhide;
+			}
+
+			function sppinerhide() {
+				$(".loading").hide();
+				document.body.onfocus = null;
+			}
 
 		});
 	</script>

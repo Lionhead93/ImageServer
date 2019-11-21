@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.hanpass.image.dto.RegImageDTO;
 import com.hanpass.image.dto.ServerResponse;
 import com.hanpass.image.model.BgImage;
 import com.hanpass.image.repository.BgImageRepository;
@@ -49,16 +50,17 @@ public class BgImageServiceImpl implements BgImageService {
 	}
 	
 	@Override
-	public ServerResponse registrationImage(List<MultipartFile> fileList) throws Exception {
-
-		String userId = "testUser";
-
+	public ServerResponse registrationImage(RegImageDTO regImageDTO) throws Exception {
+		
+		List<MultipartFile> fileList = regImageDTO.getFileList();
+		String userId = regImageDTO.getUserId();
+		
 		File fileDir = new File(filePath);
 
 		if (!fileDir.exists()) {
 			fileDir.mkdirs();
 		}
-
+		
 		for (MultipartFile mf : fileList) {
 
 			String originFileName = mf.getOriginalFilename();
